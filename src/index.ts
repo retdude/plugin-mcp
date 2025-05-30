@@ -10,8 +10,6 @@ const mcpPlugin: Plugin = {
 
   init: async (_config: Record<string, string>, runtime: IAgentRuntime) => {
     logger.info("Initializing MCP plugin...");
-    const service = await McpService.start(runtime);
-    await service.initialize(runtime);
   },
 
   services: [McpService],

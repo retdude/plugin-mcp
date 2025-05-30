@@ -1405,8 +1405,6 @@ var mcpPlugin = {
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
   init: async (_config, runtime) => {
     logger7.info("Initializing MCP plugin...");
-    const service = await McpService.start(runtime);
-    await service.initialize(runtime);
   },
   services: [McpService],
   actions: [callToolAction, readResourceAction],
