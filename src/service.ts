@@ -45,14 +45,14 @@ export class McpService extends Service {
     super(runtime);
   }
 
-  async initialize(runtime: IAgentRuntime) {
+  async initialize(runtime: IAgentRuntime): Promise<void> {
     this.runtime = runtime;
     await this.initializeMcpServers();
-    return this;
   }
 
   static async start(runtime: IAgentRuntime): Promise<McpService> {
     const service = new McpService(runtime);
+    await service.initialize(runtime);
     return service;
   }
 

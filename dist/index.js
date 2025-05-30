@@ -1044,6 +1044,7 @@ var McpService = class _McpService extends Service {
   }
   static async start(runtime) {
     const service = new _McpService(runtime);
+    await service.initialize(runtime);
     return service;
   }
   async stop() {
@@ -1402,8 +1403,10 @@ ${error}` : error;
 var mcpPlugin = {
   name: "mcp",
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
-  init: async (_config, _runtime) => {
+  init: async (_config, runtime) => {
     logger7.info("Initializing MCP plugin...");
+    const service = await McpService.start(runtime);
+    await service.initialize(runtime);
   },
   services: [McpService],
   actions: [callToolAction, readResourceAction],
