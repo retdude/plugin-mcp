@@ -22,7 +22,7 @@
     "elizaos-plugins"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
+    "build": "tsup src/**/*.ts --format esm --dts",
     "check:write": "biome check --write ./src",
     "check": "biome check ./src",
     "ci": "biome ci ./src",

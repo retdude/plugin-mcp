@@ -47,7 +47,14 @@ export class McpService extends Service {
 
   async initialize(runtime: IAgentRuntime): Promise<void> {
     this.runtime = runtime;
-    await this.initializeMcpServers();
+    const settings = this.getMcpSettings();
+    if (settings?.servers) {
+      await this.updateServerConnections(settings.servers);
+      const servers = this.getServers();
+      this.mcpProvider = buildMcpProviderData(servers);
+    } else {
+      logger.info("No MCP servers configured in character settings.");
+    }
   }
 
   static async start(runtime: IAgentRuntime): Promise<McpService> {
@@ -66,28 +73,6 @@ export class McpService extends Service {
       if (state.reconnectTimeout) clearTimeout(state.reconnectTimeout);
     }
     this.connectionStates.clear();
-  }
-
-  private async initializeMcpServers(): Promise<void> {
-    try {
-      const mcpSettings = this.getMcpSettings();
-      if (!mcpSettings || !mcpSettings.servers) {
-        logger.info("No MCP servers configured.");
-        return;
-      }
-      await this.updateServerConnections(mcpSettings.servers);
-      const servers = this.getServers();
-      this.mcpProvider = buildMcpProviderData(servers);
-    } catch (error) {
-      logger.error(
-        "Failed to initialize MCP servers:",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
-  }
-
-  private getMcpSettings(): McpSettings | undefined {
-    return this.runtime.getSetting("mcp") as McpSettings;
   }
 
   private async updateServerConnections(
@@ -448,6 +433,20 @@ export class McpService extends Service {
         );
         throw new Error(`Failed to connect to ${serverName} MCP server`);
       }
+    }
+  }
+
+  private getMcpSettings(): McpSettings | undefined {
+    const settings = this.runtime.getSetting("mcp");
+    if (!settings) return undefined;
+    
+    try {
+      // Handle both string and object settings
+      const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings;
+      return parsedSettings as McpSettings;
+    } catch (error) {
+      logger.error("Failed to parse MCP settings:", error instanceof Error ? error.message : String(error));
+      return undefined;
     }
   }
 }
