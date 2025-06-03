@@ -5,16 +5,11 @@ import { provider } from "./provider";
 import { McpService } from "./service";
 
 const mcpPlugin: Plugin = {
-  name: "mcp",
+  name: "@elizaos/plugin-mcp",
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
-
-  init: async (_config: Record<string, string>, runtime: IAgentRuntime) => {
-    logger.info("Initializing MCP plugin...");
-  },
-
   services: [McpService],
   actions: [callToolAction, readResourceAction],
-  providers: [provider],
+  providers: [provider]
 };
 
 export type { McpService };
