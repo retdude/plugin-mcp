@@ -48,6 +48,11 @@ export class McpService extends Service {
     super(runtime);
   }
 
+  public async initialize(runtime: IAgentRuntime): Promise<void> {
+    this.runtime = runtime;
+    await this.start();
+  }
+
   public async start(): Promise<void> {
     const settings = this.getMcpSettings();
     if (settings?.servers) {
