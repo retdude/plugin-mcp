@@ -6,8 +6,7 @@ const mcpPlugin: Plugin = {
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
   services: [McpService],
   init: async (_config: Record<string, string>, runtime: IAgentRuntime) => {
-    const service = new McpService(runtime);
-    await service.initialize(runtime);
+    runtime.registerService(McpService);
   }
 };
 

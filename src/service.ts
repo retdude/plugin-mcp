@@ -45,8 +45,7 @@ export class McpService extends Service {
     super(runtime);
   }
 
-  public async initialize(runtime: IAgentRuntime): Promise<void> {
-    this.runtime = runtime;
+  public async start(): Promise<void> {
     const settings = this.getMcpSettings();
     if (settings?.servers) {
       await this.updateServerConnections(settings.servers);
@@ -57,7 +56,7 @@ export class McpService extends Service {
     }
   }
 
-  async stop(): Promise<void> {
+  public async stop(): Promise<void> {
     for (const [name] of this.connections) {
       await this.deleteConnection(name);
     }

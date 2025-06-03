@@ -110,8 +110,7 @@ var McpService = class extends Service {
   constructor(runtime) {
     super(runtime);
   }
-  async initialize(runtime) {
-    this.runtime = runtime;
+  async start() {
     const settings = this.getMcpSettings();
     if (settings?.servers) {
       await this.updateServerConnections(settings.servers);
@@ -470,8 +469,7 @@ var mcpPlugin = {
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
   services: [McpService],
   init: async (_config, runtime) => {
-    const service = new McpService(runtime);
-    await service.initialize(runtime);
+    runtime.registerService(McpService);
   }
 };
 var index_default = mcpPlugin;
