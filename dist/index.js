@@ -637,7 +637,7 @@ ${textContent}`
 
 // src/service.ts
 init_tool_compatibility();
-var McpService = class extends Service {
+var McpService = class _McpService extends Service {
   static serviceType = MCP_SERVICE_NAME;
   capabilityDescription = "Enables the agent to interact with MCP (Model Context Protocol) servers";
   connections = /* @__PURE__ */ new Map();
@@ -653,9 +653,10 @@ var McpService = class extends Service {
   constructor(runtime2) {
     super(runtime2);
   }
-  async initialize(runtime2) {
-    this.runtime = runtime2;
-    await this.start();
+  static async initialize(runtime2) {
+    const service = new _McpService(runtime2);
+    await service.start();
+    return service;
   }
   async start() {
     const settings = this.getMcpSettings();
