@@ -57,12 +57,6 @@ export class McpService extends Service {
     }
   }
 
-  static async start(runtime: IAgentRuntime): Promise<McpService> {
-    const service = new McpService(runtime);
-    await service.initialize(runtime);
-    return service;
-  }
-
   async stop(): Promise<void> {
     for (const [name] of this.connections) {
       await this.deleteConnection(name);
@@ -73,6 +67,19 @@ export class McpService extends Service {
       if (state.reconnectTimeout) clearTimeout(state.reconnectTimeout);
     }
     this.connectionStates.clear();
+  }
+
+  private getMcpSettings(): McpSettings | undefined {
+    const settings = this.runtime.getSetting("mcp");
+    if (!settings) return undefined;
+    
+    try {
+      const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings;
+      return parsedSettings as McpSettings;
+    } catch (error) {
+      logger.error("Failed to parse MCP settings:", error instanceof Error ? error.message : String(error));
+      return undefined;
+    }
   }
 
   private async updateServerConnections(
@@ -433,20 +440,6 @@ export class McpService extends Service {
         );
         throw new Error(`Failed to connect to ${serverName} MCP server`);
       }
-    }
-  }
-
-  private getMcpSettings(): McpSettings | undefined {
-    const settings = this.runtime.getSetting("mcp");
-    if (!settings) return undefined;
-    
-    try {
-      // Handle both string and object settings
-      const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings;
-      return parsedSettings as McpSettings;
-    } catch (error) {
-      logger.error("Failed to parse MCP settings:", error instanceof Error ? error.message : String(error));
-      return undefined;
     }
   }
 }

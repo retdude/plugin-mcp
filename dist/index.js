@@ -96,7 +96,7 @@ ${textContent}`
 }
 
 // src/service.ts
-var McpService = class _McpService extends Service {
+var McpService = class extends Service {
   static serviceType = MCP_SERVICE_NAME;
   capabilityDescription = "Enables the agent to interact with MCP (Model Context Protocol) servers";
   connections = /* @__PURE__ */ new Map();
@@ -121,11 +121,6 @@ var McpService = class _McpService extends Service {
       logger2.info("No MCP servers configured in character settings.");
     }
   }
-  static async start(runtime) {
-    const service = new _McpService(runtime);
-    await service.initialize(runtime);
-    return service;
-  }
   async stop() {
     for (const [name] of this.connections) {
       await this.deleteConnection(name);
@@ -136,6 +131,17 @@ var McpService = class _McpService extends Service {
       if (state.reconnectTimeout) clearTimeout(state.reconnectTimeout);
     }
     this.connectionStates.clear();
+  }
+  getMcpSettings() {
+    const settings = this.runtime.getSetting("mcp");
+    if (!settings) return void 0;
+    try {
+      const parsedSettings = typeof settings === "string" ? JSON.parse(settings) : settings;
+      return parsedSettings;
+    } catch (error) {
+      logger2.error("Failed to parse MCP settings:", error instanceof Error ? error.message : String(error));
+      return void 0;
+    }
   }
   async updateServerConnections(serverConfigs) {
     const currentNames = new Set(this.connections.keys());
@@ -456,17 +462,6 @@ ${error}` : error;
       }
     }
   }
-  getMcpSettings() {
-    const settings = this.runtime.getSetting("mcp");
-    if (!settings) return void 0;
-    try {
-      const parsedSettings = typeof settings === "string" ? JSON.parse(settings) : settings;
-      return parsedSettings;
-    } catch (error) {
-      logger2.error("Failed to parse MCP settings:", error instanceof Error ? error.message : String(error));
-      return void 0;
-    }
-  }
 };
 
 // src/index.ts
@@ -475,7 +470,8 @@ var mcpPlugin = {
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
   services: [McpService],
   init: async (_config, runtime) => {
-    await McpService.start(runtime);
+    const service = new McpService(runtime);
+    await service.initialize(runtime);
   }
 };
 var index_default = mcpPlugin;
