@@ -113,17 +113,28 @@ export const callToolAction: Action = {
 
       const { serverName, toolName, arguments: toolArguments, reasoning } = parsedSelection;
 
-      logger.debug(`Selected tool "${toolName}" on server "${serverName}" because: ${reasoning}`);
+      // Find the actual tool name by case-insensitive comparison
+      const server = mcpService.getServers().find(s => s.name === serverName);
+      if (!server || !server.tools) {
+        throw new Error(`Server ${serverName} not found or has no tools`);
+      }
 
-      const result = await mcpService.callTool(serverName, toolName, toolArguments);
+      const actualTool = server.tools.find(t => t.name.toLowerCase() === toolName.toLowerCase());
+      if (!actualTool) {
+        throw new Error(`Tool ${toolName} not found on server ${serverName}`);
+      }
+
+      logger.debug(`Selected tool "${actualTool.name}" on server "${serverName}" because: ${reasoning}`);
+
+      const result = await mcpService.callTool(serverName, actualTool.name, toolArguments);
       logger.debug(
-        `Called tool ${toolName} on server ${serverName} with arguments ${JSON.stringify(toolArguments)}`
+        `Called tool ${actualTool.name} on server ${serverName} with arguments ${JSON.stringify(toolArguments)}`
       );
 
       const { toolOutput, hasAttachments, attachments } = processToolResult(
         result,
         serverName,
-        toolName,
+        actualTool.name,
         runtime,
         message.entityId
       );
@@ -132,7 +143,7 @@ export const callToolAction: Action = {
         runtime,
         message,
         serverName,
-        toolName,
+        actualTool.name,
         toolArguments,
         toolOutput,
         hasAttachments,

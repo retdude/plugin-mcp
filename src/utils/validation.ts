@@ -1,5 +1,5 @@
-import type { State } from "@elizaos/core";
-import { type McpProviderData, ResourceSelectionSchema, ToolSelectionSchema } from "../types";
+import { type State } from "@elizaos/core";
+import { type McpProviderData, type McpServerInfo, ResourceSelectionSchema } from "../types";
 import { validateJsonSchema } from "./json";
 
 export interface ToolSelection {
@@ -18,53 +18,51 @@ export interface ResourceSelection {
 }
 
 export function validateToolSelection(
-  selection: unknown,
-  composedState: State
+  data: unknown,
+  state: State
 ): { success: true; data: ToolSelection } | { success: false; error: string } {
-  const basicResult = validateJsonSchema<ToolSelection>(selection, ToolSelectionSchema);
-  if (!basicResult.success) {
-    return { success: false, error: basicResult.error };
-  }
+  try {
+    if (!data || typeof data !== "object") {
+      return { success: false, error: "Invalid tool selection: data is not an object" };
+    }
 
-  const data = basicResult.data;
+    const selection = data as ToolSelection;
 
-  if (data.noToolAvailable) {
-    return { success: true, data };
-  }
+    if (selection.noToolAvailable) {
+      return { success: true, data: { noToolAvailable: true } as ToolSelection };
+    }
 
-  const mcpData = composedState.values.mcp || {};
-  const serverInfo = mcpData[data.serverName];
+    if (!selection.serverName || !selection.toolName) {
+      return { success: false, error: "Invalid tool selection: missing serverName or toolName" };
+    }
 
-  if (!serverInfo || serverInfo.status !== "connected") {
-    return {
-      success: false,
-      error: `Server '${data.serverName}' not found or not connected`,
-    };
-  }
+    const mcpData = state.values.mcp as McpProviderData;
+    const server = mcpData[selection.serverName];
 
-  const toolInfo = serverInfo.tools?.[data.toolName];
-  if (!toolInfo) {
-    return {
-      success: false,
-      error: `Tool '${data.toolName}' not found on server '${data.serverName}'`,
-    };
-  }
+    if (!server) {
+      return { success: false, error: `Server ${selection.serverName} not found` };
+    }
 
-  if (toolInfo.inputSchema) {
-    const validationResult = validateJsonSchema(
-      data.arguments,
-      toolInfo.inputSchema as Record<string, unknown>
+    if (server.status !== "connected") {
+      return { success: false, error: `Server ${selection.serverName} is not connected` };
+    }
+
+    // Case-insensitive tool lookup
+    const tool = Object.entries(server.tools).find(
+      ([name]) => name.toLowerCase() === selection.toolName.toLowerCase()
     );
 
-    if (!validationResult.success) {
-      return {
-        success: false,
-        error: `Invalid arguments: ${validationResult.error}`,
-      };
+    if (!tool) {
+      return { success: false, error: `Tool ${selection.toolName} not found on server ${selection.serverName}` };
     }
-  }
 
-  return { success: true, data };
+    // Use the actual tool name from the server
+    selection.toolName = tool[0];
+
+    return { success: true, data: selection };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 export function validateResourceSelection(
