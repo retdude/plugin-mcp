@@ -315,7 +315,6 @@ export async function createMcpToolCompatibility(runtime: any): Promise<McpToolC
   try {
     switch (modelInfo.provider) {
       case 'openai':
-        // Use dynamic ES module imports
         const { OpenAIMcpCompatibility } = await import('./providers/openai.js');
         return new OpenAIMcpCompatibility(modelInfo);
       case 'anthropic':
@@ -333,26 +332,19 @@ export async function createMcpToolCompatibility(runtime: any): Promise<McpToolC
   }
 }
 
-// Synchronous version for environments that need it (like service.ts)
-export function createMcpToolCompatibilitySync(runtime: any): McpToolCompatibility | null {
+// Asynchronous version for ESM compatibility
+export async function createMcpToolCompatibilityAsync(runtime: any): Promise<McpToolCompatibility | null> {
   const modelInfo = detectModelProvider(runtime);
   
-  // Use synchronous requires for CommonJS environments
+  // Use dynamic imports for ESM compatibility
   try {
     switch (modelInfo.provider) {
       case 'openai':
-        // Use eval to avoid bundlers trying to process this
-        const OpenAIModule = eval('require')('./providers/openai');
-        const { OpenAIMcpCompatibility } = OpenAIModule;
-        return new OpenAIMcpCompatibility(modelInfo);
+        return new (await import('./providers/openai.js')).OpenAIMcpCompatibility(modelInfo);
       case 'anthropic':
-        const AnthropicModule = eval('require')('./providers/anthropic');
-        const { AnthropicMcpCompatibility } = AnthropicModule;
-        return new AnthropicMcpCompatibility(modelInfo);
+        return new (await import('./providers/anthropic.js')).AnthropicMcpCompatibility(modelInfo);
       case 'google':
-        const GoogleModule = eval('require')('./providers/google');
-        const { GoogleMcpCompatibility } = GoogleModule;
-        return new GoogleMcpCompatibility(modelInfo);
+        return new (await import('./providers/google.js')).GoogleMcpCompatibility(modelInfo);
       default:
         return null; // No compatibility layer needed
     }

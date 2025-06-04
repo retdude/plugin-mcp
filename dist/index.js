@@ -11,17 +11,17 @@ var __export = (target, all) => {
 // src/tool-compatibility/providers/openai.ts
 var openai_exports = {};
 __export(openai_exports, {
-  OpenAIMcpCompatibility: () => OpenAIMcpCompatibility2,
+  OpenAIMcpCompatibility: () => OpenAIMcpCompatibility,
   OpenAIReasoningMcpCompatibility: () => OpenAIReasoningMcpCompatibility
 });
-var OpenAIMcpCompatibility2, OpenAIReasoningMcpCompatibility;
+var OpenAIMcpCompatibility, OpenAIReasoningMcpCompatibility;
 var init_openai = __esm({
   "src/tool-compatibility/providers/openai.ts"() {
     "use strict";
     init_tool_compatibility();
-    OpenAIMcpCompatibility2 = class extends McpToolCompatibility {
-      constructor(modelInfo2) {
-        super(modelInfo2);
+    OpenAIMcpCompatibility = class extends McpToolCompatibility {
+      constructor(modelInfo) {
+        super(modelInfo);
       }
       shouldApply() {
         return this.modelInfo.provider === "openai" && (!this.modelInfo.supportsStructuredOutputs || this.modelInfo.isReasoningModel === true);
@@ -53,8 +53,8 @@ var init_openai = __esm({
       }
     };
     OpenAIReasoningMcpCompatibility = class extends McpToolCompatibility {
-      constructor(modelInfo2) {
-        super(modelInfo2);
+      constructor(modelInfo) {
+        super(modelInfo);
       }
       shouldApply() {
         return this.modelInfo.provider === "openai" && this.modelInfo.isReasoningModel === true;
@@ -125,16 +125,16 @@ IMPORTANT: ${constraintText}`;
 // src/tool-compatibility/providers/anthropic.ts
 var anthropic_exports = {};
 __export(anthropic_exports, {
-  AnthropicMcpCompatibility: () => AnthropicMcpCompatibility2
+  AnthropicMcpCompatibility: () => AnthropicMcpCompatibility
 });
-var AnthropicMcpCompatibility2;
+var AnthropicMcpCompatibility;
 var init_anthropic = __esm({
   "src/tool-compatibility/providers/anthropic.ts"() {
     "use strict";
     init_tool_compatibility();
-    AnthropicMcpCompatibility2 = class extends McpToolCompatibility {
-      constructor(modelInfo2) {
-        super(modelInfo2);
+    AnthropicMcpCompatibility = class extends McpToolCompatibility {
+      constructor(modelInfo) {
+        super(modelInfo);
       }
       shouldApply() {
         return this.modelInfo.provider === "anthropic";
@@ -181,16 +181,16 @@ var init_anthropic = __esm({
 // src/tool-compatibility/providers/google.ts
 var google_exports = {};
 __export(google_exports, {
-  GoogleMcpCompatibility: () => GoogleMcpCompatibility2
+  GoogleMcpCompatibility: () => GoogleMcpCompatibility
 });
-var GoogleMcpCompatibility2;
+var GoogleMcpCompatibility;
 var init_google = __esm({
   "src/tool-compatibility/providers/google.ts"() {
     "use strict";
     init_tool_compatibility();
-    GoogleMcpCompatibility2 = class extends McpToolCompatibility {
-      constructor(modelInfo2) {
-        super(modelInfo2);
+    GoogleMcpCompatibility = class extends McpToolCompatibility {
+      constructor(modelInfo) {
+        super(modelInfo);
       }
       shouldApply() {
         return this.modelInfo.provider === "google";
@@ -285,8 +285,8 @@ Constraints: ${constraintText}`;
 });
 
 // src/tool-compatibility/index.ts
-function detectModelProvider(runtime2) {
-  const modelString = runtime2?.modelProvider || runtime2?.model || "";
+function detectModelProvider(runtime) {
+  const modelString = runtime?.modelProvider || runtime?.model || "";
   const modelId = String(modelString).toLowerCase();
   let provider = "unknown";
   let supportsStructuredOutputs = false;
@@ -312,43 +312,16 @@ function detectModelProvider(runtime2) {
     isReasoningModel
   };
 }
-async function createMcpToolCompatibility(runtime2) {
-  const modelInfo2 = detectModelProvider(runtime2);
-  try {
-    switch (modelInfo2.provider) {
-      case "openai":
-        const { OpenAIMcpCompatibility: OpenAIMcpCompatibility3 } = await Promise.resolve().then(() => (init_openai(), openai_exports));
-        return new OpenAIMcpCompatibility3(modelInfo2);
-      case "anthropic":
-        const { AnthropicMcpCompatibility: AnthropicMcpCompatibility3 } = await Promise.resolve().then(() => (init_anthropic(), anthropic_exports));
-        return new AnthropicMcpCompatibility3(modelInfo2);
-      case "google":
-        const { GoogleMcpCompatibility: GoogleMcpCompatibility3 } = await Promise.resolve().then(() => (init_google(), google_exports));
-        return new GoogleMcpCompatibility3(modelInfo2);
-      default:
-        return null;
-    }
-  } catch (error) {
-    console.warn("Failed to load compatibility provider:", error);
-    return null;
-  }
-}
-function createMcpToolCompatibilitySync(runtime) {
+async function createMcpToolCompatibilityAsync(runtime) {
   const modelInfo = detectModelProvider(runtime);
   try {
     switch (modelInfo.provider) {
       case "openai":
-        const OpenAIModule = eval("require")("./providers/openai");
-        const { OpenAIMcpCompatibility } = OpenAIModule;
-        return new OpenAIMcpCompatibility(modelInfo);
+        return new (await Promise.resolve().then(() => (init_openai(), openai_exports))).OpenAIMcpCompatibility(modelInfo);
       case "anthropic":
-        const AnthropicModule = eval("require")("./providers/anthropic");
-        const { AnthropicMcpCompatibility } = AnthropicModule;
-        return new AnthropicMcpCompatibility(modelInfo);
+        return new (await Promise.resolve().then(() => (init_anthropic(), anthropic_exports))).AnthropicMcpCompatibility(modelInfo);
       case "google":
-        const GoogleModule = eval("require")("./providers/google");
-        const { GoogleMcpCompatibility } = GoogleModule;
-        return new GoogleMcpCompatibility(modelInfo);
+        return new (await Promise.resolve().then(() => (init_google(), google_exports))).GoogleMcpCompatibility(modelInfo);
       default:
         return null;
     }
@@ -363,8 +336,8 @@ var init_tool_compatibility = __esm({
     "use strict";
     McpToolCompatibility = class {
       modelInfo;
-      constructor(modelInfo2) {
-        this.modelInfo = modelInfo2;
+      constructor(modelInfo) {
+        this.modelInfo = modelInfo;
       }
       // Transform a complete tool schema
       transformToolSchema(toolSchema) {
@@ -650,11 +623,11 @@ var McpService = class _McpService extends Service {
   pingConfig = DEFAULT_PING_CONFIG;
   toolCompatibility = null;
   compatibilityInitialized = false;
-  constructor(runtime2) {
-    super(runtime2);
+  constructor(runtime) {
+    super(runtime);
   }
-  static async initialize(runtime2) {
-    const service = new _McpService(runtime2);
+  static async initialize(runtime) {
+    const service = new _McpService(runtime);
     await service.start();
     return service;
   }
@@ -900,21 +873,21 @@ ${error}` : error;
         return [];
       }
       const response = await connection.client.listTools();
-      const tools = (response?.tools || []).map((tool) => {
+      const tools = await Promise.all((response?.tools || []).map(async (tool) => {
         let processedTool = { ...tool };
         if (tool.inputSchema) {
           try {
             if (!this.compatibilityInitialized) {
-              this.initializeToolCompatibility();
+              await this.initializeToolCompatibility();
             }
-            processedTool.inputSchema = this.applyToolCompatibility(tool.inputSchema);
+            processedTool.inputSchema = await this.applyToolCompatibility(tool.inputSchema);
             logger2.debug(`Applied tool compatibility for: ${tool.name} on server: ${serverName}`);
           } catch (error) {
             logger2.warn(`Tool compatibility failed for ${tool.name} on ${serverName}:`, error);
           }
         }
         return processedTool;
-      });
+      }));
       logger2.info(`Fetched ${tools.length} tools for ${serverName}`);
       for (const tool of tools) {
         logger2.info(`[${serverName}] ${tool.name}: ${tool.description}`);
@@ -1024,9 +997,9 @@ ${error}` : error;
       }
     }
   }
-  initializeToolCompatibility() {
+  async initializeToolCompatibility() {
     if (this.compatibilityInitialized) return;
-    this.toolCompatibility = createMcpToolCompatibilitySync(this.runtime);
+    this.toolCompatibility = await createMcpToolCompatibilityAsync(this.runtime);
     this.compatibilityInitialized = true;
     if (this.toolCompatibility) {
       logger2.info(`Tool compatibility enabled`);
@@ -1034,9 +1007,9 @@ ${error}` : error;
       logger2.info(`No tool compatibility needed`);
     }
   }
-  applyToolCompatibility(toolSchema) {
+  async applyToolCompatibility(toolSchema) {
     if (!this.compatibilityInitialized) {
-      this.initializeToolCompatibility();
+      await this.initializeToolCompatibility();
     }
     if (!this.toolCompatibility || !toolSchema) {
       return toolSchema;
@@ -1055,8 +1028,8 @@ var mcpPlugin = {
   name: "@elizaos/plugin-mcp",
   description: "Plugin for connecting to MCP (Model Context Protocol) servers",
   services: [McpService],
-  init: async (_config, runtime2) => {
-    runtime2.registerService(McpService);
+  init: async (_config, runtime) => {
+    runtime.registerService(McpService);
   }
 };
 var index_default = mcpPlugin;

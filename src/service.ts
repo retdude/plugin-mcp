@@ -27,7 +27,7 @@ import {
   type PingConfig,
 } from "./types";
 import { buildMcpProviderData } from "./utils/mcp";
-import { createMcpToolCompatibilitySync as createMcpToolCompatibility, type McpToolCompatibility } from "./tool-compatibility";
+import { createMcpToolCompatibilityAsync as createMcpToolCompatibility, type McpToolCompatibility } from "./tool-compatibility";
 
 export class McpService extends Service {
   static serviceType: string = MCP_SERVICE_NAME;
@@ -326,7 +326,7 @@ export class McpService extends Service {
 
       const response = await connection.client.listTools();
 
-      const tools = (response?.tools || []).map((tool) => {
+      const tools = await Promise.all((response?.tools || []).map(async (tool) => {
         // Apply tool compatibility transformation to the tool's input schema
         let processedTool = { ...tool };
         
@@ -334,11 +334,11 @@ export class McpService extends Service {
           try {
             // Initialize compatibility if not already done
             if (!this.compatibilityInitialized) {
-              this.initializeToolCompatibility();
+              await this.initializeToolCompatibility();
             }
             
             // Apply compatibility transformations automatically
-            processedTool.inputSchema = this.applyToolCompatibility(tool.inputSchema);
+            processedTool.inputSchema = await this.applyToolCompatibility(tool.inputSchema);
             
             logger.debug(`Applied tool compatibility for: ${tool.name} on server: ${serverName}`);
           } catch (error) {
@@ -348,7 +348,7 @@ export class McpService extends Service {
         }
         
         return processedTool;
-      });
+      }));
 
       logger.info(`Fetched ${tools.length} tools for ${serverName}`);
       for (const tool of tools) {
@@ -476,10 +476,10 @@ export class McpService extends Service {
     }
   }
 
-  private initializeToolCompatibility(): void {
+  private async initializeToolCompatibility(): Promise<void> {
     if (this.compatibilityInitialized) return;
     
-    this.toolCompatibility = createMcpToolCompatibility(this.runtime);
+    this.toolCompatibility = await createMcpToolCompatibility(this.runtime);
     this.compatibilityInitialized = true;
     
     if (this.toolCompatibility) {
@@ -489,9 +489,9 @@ export class McpService extends Service {
     }
   }
 
-  public applyToolCompatibility(toolSchema: any): any {
+  public async applyToolCompatibility(toolSchema: any): Promise<any> {
     if (!this.compatibilityInitialized) {
-      this.initializeToolCompatibility();
+      await this.initializeToolCompatibility();
     }
 
     if (!this.toolCompatibility || !toolSchema) {
